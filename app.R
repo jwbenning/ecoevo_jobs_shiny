@@ -3,6 +3,7 @@ library(shiny)
 library(googlesheets4)
 library(tidyverse)
 library(Hmisc)
+library(ggExtra)
 
 ui <- fluidPage(
   titlePanel("Explore the EEB Job Market"),
@@ -16,6 +17,25 @@ ui <- fluidPage(
              selectInput("color_var", "Color by:", choices = c("None", "Job Cycle", "Current Position", "Gender"), selected = "None"),
              checkboxInput("postdocOnly", "Postdoc data only", value = FALSE),
              checkboxInput("noCB", "No confidence bands", value = FALSE)
+           ),
+           wellPanel(
+             titlePanel("Your data"),
+             checkboxInput("showDataInputs", "Collapse this section", value = FALSE),
+             checkboxInput("useDataInputs", "Plot your data", value = FALSE),
+             conditionalPanel(
+               condition = "input.showDataInputs",
+               numericInput("phdYear", "PhD Year:", value = NA),
+               numericInput("firstAuthorPubs", "First Author Pubs:", value = NA),
+               numericInput("seniorAuthorPubs", "Senior Author Pubs:", value = NA),
+               numericInput("totalPublications", "Total Publications:", value = NA),
+               numericInput("fellowships", "Fellowships:", value = NA),
+               numericInput("majorGrants", "Major Grants:", value = NA),
+               numericInput("classesTaught", "Classes Taught:", value = NA),
+               numericInput("applications", "Applications:", value = NA),
+               numericInput("phoneInterviews", "Phone Interviews:", value = NA),
+               numericInput("campusInterviews", "Campus Interviews:", value = NA),
+               numericInput("offers", "Offers:", value = NA),
+             )
            )
     ),
     column(width = 8,
@@ -82,10 +102,41 @@ sheet_data <- read_csv(csv_export_url, na = c("", "NULL", "NA")) %>%
          `Current Position` = fct_relevel(`Current Position`, "Grad Student", "Postdoc", "Non TT faculty", "Asst Prof", "Other"),
          `Total Funding` = fct_relevel(as.factor(`Total Funding`), "$1-50,000", "$50,000-100,000", "$100,000-250,000", "$250,000-500,000", "$500,000-$1M", "$1-2M", "$2M+"))
 
+
+
+
+
 categorical_vars <- c("Gender", "Current Position", "Total Funding")
 
 
 server <- function(input, output) {
+  
+  # Define a reactive expression that creates a new dataframe based on the inputs
+  ind_data <- reactive({
+      # Subtract the PhD year from the current year to calculate the years since PhD
+      yearsSincePhD <- 2024 - input$phdYear
+      
+      tibble(
+        `PhD Year` = input$phdYear,
+        `First Author Pubs` = input$firstAuthorPubs,
+        `First Author Publication Rate` = input$firstAuthorPubs / yearsSincePhD,
+        `Senior Author Pubs` = input$seniorAuthorPubs,
+        `Total Publications` = input$totalPublications,
+        `Overall Publication Rate` = input$totalPublications / yearsSincePhD,
+        `Fellowships` = input$fellowships,
+        `Major Grants` = input$majorGrants,
+        `Classes Taught` = input$classesTaught,
+        `Applications` = input$applications,
+        `Phone Interviews` = input$phoneInterviews,
+        `Phone Interview Rate` = input$phoneInterviews / input$applications,
+        `Campus Interviews` = input$campusInterviews,
+        `Campus Interview Rate` = input$campusInterviews / input$applications,
+        `Offers` = input$offers,
+        `Offer Rate` = input$offers / input$applications,
+        `Years Since PhD` = yearsSincePhD
+      )
+  })
+  
   data <- reactive({
     filtered_data <- sheet_data[!is.na(sheet_data[[input$y_axis]]), ]
     
@@ -191,6 +242,20 @@ server <- function(input, output) {
               legend.position = "bottom") +
         guides(color = guide_legend(nrow = 2, byrow = TRUE)) +
         annotate("text", x = Inf, y = Inf, label = paste("n =", nrow(plot_data)), hjust = 1, vjust = 1, size = 5)
+      
+      ind_data_value <- ind_data()
+      
+      # Add vertical and horizontal lines for ind_data
+      if (!is.na(ind_data_value[[input$x_axis]]) & input$useDataInputs) {
+        p <- p + geom_vline(aes(xintercept = ind_data_value[[input$x_axis]]), linetype = "dotted", color = "red", size = 1)
+      }
+      
+      if (!is.na(ind_data_value[[input$y_axis]]) & input$useDataInputs) {
+      p <- p + geom_hline(aes(yintercept = ind_data_value[[input$y_axis]]), linetype = "dotted", color = "red", size = 1)
+      }
+      
+      # Add marginal histograms using ggmarginal
+      p <- ggMarginal(p, type = "histogram")
       
       print(p)
     }
