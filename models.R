@@ -1,11 +1,11 @@
-library(caret)
-library(caTools)
+#library(caret)
+#library(caTools)
 library(tidyverse)
 library(glmnet)
 library(brms)
-library(brmstools)
+#library(brmstools)
 library(bayesplot)
-library(tidybayes)
+#library(tidybayes)
 
 vars <- c("Current Position", 
           "Years Since PhD", 
@@ -26,18 +26,20 @@ lasso_df <- sheet_data %>%
 
 
 #######################################################
-####### Bayesian
+####### Bayesian logistic regression
 #######################################################
 
-skeptical_prior <- set_prior("normal(0, 0.5)", class = "b")
+skeptical_prior <- set_prior("normal(0, 0.2)", class = "b")
+
+#horseshoe_prior <- set_prior("horseshoe(df=2)")
 
 bayes_model <- brm(
-  Offers | trials(Applications) ~ YearsSincePhD + CurrentPosition + Gender + FirstAuthorPubs + TotalPublications,
+  Offers | trials(Applications) ~ YearsSincePhD + CurrentPosition + Gender + FirstAuthorPubs + TotalPublications + Fellowships + MajorGrants + ClassesTaught,
   data = lasso_df,
   family = binomial(),
   prior = skeptical_prior,
   chains = 4,
-  iter = 2000,
+  iter = 3000,
   cores = 4
 )
 
@@ -47,22 +49,31 @@ bayes_model <- brm(
 
 summary(bayes_model)
 
-conditional_effects(bayes_model)
+#plot(conditional_effects(bayes_model), ask = F)
 
-posterior_samples <- as.matrix(bayes_model)
+#posterior_samples <- as.matrix(bayes_model)
+#color_scheme_set("blue")
+#mcmc_areas(posterior_samples, 
+#           pars = c("b_YearsSincePhD"))
 
-color_scheme_set("blue")
-mcmc_areas(posterior_samples, 
-           pars = c("b_YearsSincePhD"))
+mcmc_plot(bayes_model, prob_outer = 0.95)
 
 
 
-#######################################################
+
+####################
 ####### PREDICTION
-#######################################################
+####################
 
-new_values_data <- data.frame(Applications = 50,
-                              gender_bi = c(0, 1))
+new_values_data <- data.frame(Applications = 150,
+                              YearsSincePhD = 5,
+                              CurrentPosition = "Postdoc",
+                              Gender = "Male",
+                              FirstAuthorPubs = 7,
+                              TotalPublications = 10,
+                              Fellowships = 2,
+                              MajorGrants = 1,
+                              ClassesTaught = 0)
 
 ##############
 ### Predictions -- count
@@ -71,13 +82,25 @@ new_values_data <- data.frame(Applications = 50,
 predictions <- posterior_predict(bayes_model, newdata = new_values_data)
 
 mean(predictions[,1])
-mean(predictions[,2])
+
+hist(predictions)
 
 ##############
 ### Predictions -- probability
 ##############
 
 predictions_prob <- fitted(bayes_model, newdata = new_values_data)
+predict(bayes_model, newdata = new_values_data, type = "response")
+
+
+
+
+
+
+
+
+
+
 
 
 
