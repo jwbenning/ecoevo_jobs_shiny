@@ -7,7 +7,7 @@ library(ggExtra)
 
 ui <- fluidPage(
   titlePanel("Explore the EEB Job Market"),
-  h4(HTML("Data from <a href='https://docs.google.com/spreadsheets/d/1cqTuSeLtH-Zw7X9ZtnhQxzw3r19Rya9nzdqRW9apTmY/edit#gid=1335543736' target='_blank'>EcoEvoJobs.net</a>, for 2021/2022 and 2022/2023 job cycles")),
+  h4(HTML("Data from `Anon Quals` via <a href='https://docs.google.com/spreadsheets/d/1cqTuSeLtH-Zw7X9ZtnhQxzw3r19Rya9nzdqRW9apTmY/edit#gid=1335543736' target='_blank'>EcoEvoJobs.net</a>, for 2021/2022 and 2022/2023 job cycles")),
   fluidRow(
     column(width = 4,
            div(style = "padding: 10px; background-color: #f7f7f7;",
@@ -23,7 +23,7 @@ ui <- fluidPage(
              checkboxInput("showDataInputs", "Collapse this section", value = FALSE),
              checkboxInput("useDataInputs", "Plot your data", value = FALSE),
              conditionalPanel(
-               condition = "input.showDataInputs",
+               condition = "!input.showDataInputs",
                numericInput("phdYear", "PhD Year:", value = NA),
                numericInput("firstAuthorPubs", "First Author Pubs:", value = NA),
                numericInput("seniorAuthorPubs", "Senior Author Pubs:", value = NA),
@@ -46,13 +46,12 @@ ui <- fluidPage(
   ),
   div(
     style = "padding:10px; background-color: #f7f7f7;",
-    HTML("<p>Add your data <a href='https://forms.gle/Q7DDngHaVGQDiEZc7' target='_blank'>here</a> if you were on the job market this year!</p>
-      <p>'Offer / Interview Rate' = (Offers or Interviews) / Applications</p>
+    HTML("<p>'Offer / Interview Rate' = (Offers or Interviews) / Applications</p>
       <p>'Publication Rate' = Total Publications / Years Since PhD</p>
       <p>'Classes taught' refers to the number of times an applicant was an Instructor of Record</p>
-      <p>Loess regression lines have 95% confidence interval bands</p>
+      <p>Loess regression lines have 95% confidence interval bands (geom_smooth function)</p>
       <p>Point ranges for categorical data show mean and 95% confidence limits estimated from bootstrapping (mean_cl_boot function)</p>
-      <p>Download the original, cleaned, and R-processed data used in this app <a href='https://docs.google.com/spreadsheets/d/1Wmz6N01mSrpcTfIoMH0Rg42xL64SRKYKzIrAZmDGQ7U/edit#gid=697264455' target='_blank'>here</a>. Data cleaning was necessarily subjective to some extent. All data cleaning steps are recorded in `Data Cleaning` fields for individual records, and on the 'General Cleaning Notes' worksheet. App data will be updated semi-regularly to include new records added via EcoEvoJobs.</p>
+      <p>Download the original, cleaned, and R-processed data used in this app <a href='https://docs.google.com/spreadsheets/d/1Wmz6N01mSrpcTfIoMH0Rg42xL64SRKYKzIrAZmDGQ7U/edit#gid=697264455' target='_blank'>here</a>. Data cleaning was necessarily subjective to some extent. All data cleaning steps are recorded in `Data Cleaning` fields for individual records, and on the 'General Cleaning Notes' worksheet.</p>
       <p>Interpret all relationships with a grain of salt -- who knows if the sampling here is representative, and there is inherent messiness (e.g., 'Offers' could encompass R1, SLAC, and even non-academic job offers). </p>
       <p>Email comments / bugs to jwbenning@gmail.com</p>")
   )
